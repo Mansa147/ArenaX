@@ -8,8 +8,10 @@ import { TransactionHistory } from "@/components/wallet/TransactionHistory";
 import { TransactionToasts } from "@/components/wallet/TransactionToasts";
 import { WalletConnectCard } from "@/components/wallet/WalletConnectCard";
 import { WithdrawModal } from "@/components/wallet/WithdrawModal";
+import { SessionExpiredModal } from "@/components/auth/SessionExpiredModal";
 import { useTxStatus } from "@/hooks/useTxStatus";
 import { useWallet } from "@/hooks/useWallet";
+import { useTokenGuard } from "@/hooks/useTokenGuard";
 import { createEmptyBalances, fetchWalletBalances } from "@/lib/wallet/balances";
 import { walletConfig } from "@/lib/wallet/config";
 import { submitWithdrawTransaction } from "@/lib/wallet/transactions";
@@ -18,6 +20,7 @@ import { WalletAssetCode, WithdrawRequest } from "@/lib/wallet/types";
 export function WalletDashboard() {
   const { session, isConnected, publicKey } = useWallet();
   const { history, appendHistory, clearHistory, trackTx } = useTxStatus();
+  const { ensureTokenValid, sessionExpiredReason, clearSessionExpired } = useTokenGuard();
 
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -40,7 +43,8 @@ export function WalletDashboard() {
     return balancesQuery.data ?? createEmptyBalances();
   }, [balancesQuery.data]);
 
-  const handleRecordDeposit = (asset: WalletAssetCode, amount: number) => {
+  const handleRecordDeposit = async (asset: WalletAssetCode, amount: number) => {
+    if (!(await ensureTokenValid())) return;
     appendHistory({
       direction: "deposit",
       asset,
@@ -54,6 +58,8 @@ export function WalletDashboard() {
     if (!session) {
       throw new Error("Connect a wallet before withdrawing.");
     }
+
+    if (!(await ensureTokenValid())) return;
 
     setWithdrawSubmitting(true);
 
@@ -136,6 +142,11 @@ export function WalletDashboard() {
       )}
 
       <TransactionToasts />
+
+      <SessionExpiredModal
+        reason={sessionExpiredReason}
+        onDismiss={clearSessionExpired}
+      />
     </div>
   );
 }
