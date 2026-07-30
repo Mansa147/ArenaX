@@ -8,16 +8,21 @@ import { MatchHistory } from "@/components/profile/MatchHistory";
 import { ProfileBio } from "@/components/profile/ProfileBio";
 import { StatsOverview } from "@/components/dashboard/StatsOverview";
 import { currentUser as fallbackUser, mockEloHistory } from "@/data/user";
-import { mockMatchHistory } from "@/data/matches";
+import { useMatches } from "@/hooks/useMatches";
 import { User } from "@/types/user";
 
 export default function DashboardProfilePage() {
   const { user: authUser } = useAuth();
   const [user, setUser] = useState<User>(authUser ?? fallbackUser);
 
-  const wins = mockMatchHistory.filter((m) => m.winnerId === user.id).length;
-  const losses = mockMatchHistory.length - wins;
-  const winRate = mockMatchHistory.length > 0 ? Math.round((wins / mockMatchHistory.length) * 100) : 0;
+  const { data: matchesData } = useMatches(
+    authUser ? { userId: authUser.id, limit: 20 } : undefined,
+  );
+  const matchHistory = matchesData ?? [];
+
+  const wins = matchHistory.filter((m) => m.winnerId === user.id).length;
+  const losses = matchHistory.length - wins;
+  const winRate = matchHistory.length > 0 ? Math.round((wins / matchHistory.length) * 100) : 0;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -56,7 +61,7 @@ export default function DashboardProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <EloChart data={mockEloHistory} />
-          <MatchHistory matches={mockMatchHistory} currentUserId={user.id} />
+          <MatchHistory matches={matchHistory} currentUserId={user.id} />
         </div>
         <div>
           <ProfileBio user={user} onSave={(fields) => setUser((prev) => ({ ...prev, ...fields }))} />

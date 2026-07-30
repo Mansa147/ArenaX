@@ -25,7 +25,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { MatchHubDetails } from "@/data/matchHub";
+import type { MatchHubDetails } from "@/types/match";
 import { MatchDetail } from "@/types/match";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 
@@ -47,7 +47,7 @@ function MatchHubPageContent() {
   const matchId = Array.isArray(params.id) ? params.id[0] : params.id;
   const currentUserId = user?.id ?? "user-123";
 
-  const { data: matchData, isLoading, error, refetch } = useMatch(matchId);
+  const { data: matchData, isLoading, isError, refetch } = useMatch(matchId);
 
   // Handle both possible data shapes
   const match = matchData as (MatchHubDetails | null);
@@ -152,21 +152,44 @@ function MatchHubPageContent() {
     );
   }
 
-  // Error state or no data
-  if (error || (!match && !matchDetail)) {
+  // Error state
+  if (isError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md rounded-[32px] border border-border bg-white p-8 shadow-sm text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50">
+            <AlertTriangle className="h-7 w-7 text-rose-500" aria-hidden="true" />
+          </div>
+          <h1 className="text-xl font-semibold text-foreground">Failed to load match</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We couldn&apos;t reach the server. Check your connection and try again.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button onClick={() => refetch()} className="gap-2">
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              Retry
+            </Button>
+            <Button variant="ghost" onClick={() => router.push("/tournaments")}>
+              Back to Tournaments
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // No data after a successful fetch
+  if (!match && !matchDetail) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="text-center">
           <h1 className="mb-2 text-3xl font-bold text-foreground">Match Not Found</h1>
           <p className="mb-6 text-muted-foreground">
-            The match you&apos;re looking for doesn&apos;t exist or failed to load.
+            The match you&apos;re looking for doesn&apos;t exist.
           </p>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={() => refetch()}>Retry</Button>
-            <Button variant="ghost" onClick={() => router.push("/tournaments")}>
-              Back to Tournaments
-            </Button>
-          </div>
+          <Button variant="ghost" onClick={() => router.push("/tournaments")}>
+            Back to Tournaments
+          </Button>
         </div>
       </div>
     );

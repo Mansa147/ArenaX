@@ -47,7 +47,8 @@ jest.mock('@/hooks/useMatches', () => ({
     return {
       data,
       isLoading: false,
-      error: data ? null : new Error('Not found'),
+      isError: false,
+      error: null,
       refetch: jest.fn(),
     };
   },
